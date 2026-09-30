@@ -93,8 +93,12 @@ import sys
 REPO_DIR = "/kaggle/working/E2AD"
 if os.path.exists(REPO_DIR):
     os.chdir(REPO_DIR)
+    print(f"Directory {REPO_DIR} exists. Pulling latest updates from origin main...")
+    os.system("git pull origin main")
 elif os.path.exists("./e2ad_br35h.py"):
     REPO_DIR = os.path.abspath(".")
+    print("Already inside E2AD workspace. Pulling latest updates...")
+    os.system("git pull origin main")
 else:
     print(f"Cloning personal FYP repository to {REPO_DIR}...")
     os.system(f"git clone https://github.com/gnanadeep256/E2AD.git {REPO_DIR}")
