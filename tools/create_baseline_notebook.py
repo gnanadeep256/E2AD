@@ -385,7 +385,14 @@ for k, v in outputs.items():
 
 assert 'loss' in outputs, "Model output missing 'loss' key!"
 assert 'p_all_1' in outputs and 'p_all_2' in outputs, "Model output missing decoder anomaly maps!"
-print("\\nModel initialization and GPU forward pass PASSED successfully!")""")
+print("\\nModel initialization and GPU forward pass PASSED successfully!")
+
+# Explicitly cleanup smoke test model from GPU VRAM to leave full memory for training
+del model, dummy_input, outputs
+import gc
+gc.collect()
+torch.cuda.empty_cache()
+print("GPU smoke test model successfully freed from VRAM.")""")
 
 # ==============================================================================
 # SECTION 9: Baseline Training Execution
@@ -397,10 +404,21 @@ Execute the official training routine (`e2ad_br35h.py`) with:
 - Iterations: 4,000 (eval every 100 iters)
 - Batch size: 32 (eval batch size: 64)
 - GPU: `0`
-- `--save_weight 1` to persist checkpoints to disk""")
+- `--save_weight 1` to persist checkpoints to disk
+- `--amp True`: Uses official Automatic Mixed Precision (`torch.cuda.amp`) built into `e2ad_br35h.py` to prevent OOM on 15 GB Tesla T4 GPUs (the authors trained on a 40 GB NVIDIA A100).""")
 
 add_code("""import subprocess
 import time
+import os
+import gc
+import torch
+
+# Prevent PyTorch allocator fragmentation on 16GB GPUs
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
+# Flush any lingering CUDA memory before launching training process
+gc.collect()
+torch.cuda.empty_cache()
 
 start_time = time.time()
 
@@ -421,6 +439,7 @@ TRAIN_CMD = [
     "--lr", "5e-4",
     "--lr_encoder", "5e-5",
     "--weight_decay", "1e-4",
+    "--amp", "True",
     "--seed", "0"
 ]
 

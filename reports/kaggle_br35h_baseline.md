@@ -132,8 +132,15 @@ python e2ad_br35h.py \
     --lr 5e-4 \
     --lr_encoder 5e-5 \
     --weight_decay 1e-4 \
+    --amp True \
     --seed 0
 ```
+
+> [!TIP]
+> **VRAM & Hardware Context**:  
+> In the paper, the authors executed experiments on a 40 GB NVIDIA A100 (`A100-PCIE-40 GB`). On Kaggle's 15 GB Tesla T4 GPU, batch size 32 in standard FP32 reaches $\sim 14.1\text{ GB}$, which exhausts GPU memory during the high-dimensional cosine similarity reconstruction steps.  
+> The authors natively implemented Automatic Mixed Precision (`torch.cuda.amp`) via `--amp` in `e2ad_br35h.py` and `methods/edc1.py`. Passing `--amp True` reduces activation memory to $\sim 6\text{ GB}$ (leaving $\sim 9\text{ GB}$ headroom on a Tesla T4) without changing the architecture, batch size, learning rate, or loss formulation.
+> Additionally, setting `os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"` prevents PyTorch memory fragmentation.
 
 ---
 
