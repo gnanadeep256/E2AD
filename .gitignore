@@ -1,0 +1,38 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*/__pycache__/
+
+# Datasets (large image archives)
+BR35H/
+APTOS/
+ISIC2018/
+OCT2017/
+*.zip
+*.tar.gz
+
+# Saved models and checkpoints
+saved_models/
+checkpoints/
+*.pth
+*.pt
+
+# Logs & TensorBoard
+runs/
+*.log
+events.out.tfevents.*
+
+# Reference documents
+*.pdf
+
+# OS & Editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

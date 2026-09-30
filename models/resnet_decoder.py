@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Type, Any, Callable, Union, List, Optional
-from torchvision._internally_replaced_utils import load_state_dict_from_url
+from torch.hub import load_state_dict_from_url
 import torch
 
 model_urls = {

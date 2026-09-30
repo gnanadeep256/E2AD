@@ -2,8 +2,12 @@ from albumentations.core.transforms_interface import (
     DualTransform,
     ImageOnlyTransform,
     NoOp,
-    to_tuple,
 )
+try:
+    from albumentations.core.transforms_interface import to_tuple
+except ImportError:
+    def to_tuple(param, low=None, bias=None):
+        return tuple(param) if isinstance(param, (list, tuple)) else (param, param)
 import random
 import numpy as np
 
