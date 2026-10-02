@@ -124,8 +124,10 @@ def main_worker(gpu, args, total_list, save_path):
     
     total_list[0].append(eval_dict['eval/AUC'])
     total_list[1].append(eval_dict['eval/best_auc'])
+    if len(total_list) > 2:
+        total_list[2].append(eval_dict)
+    args.last_eval_dict = eval_dict
 
-    
     logging.warning(f"training is FINISHED")
     return total_list
 
