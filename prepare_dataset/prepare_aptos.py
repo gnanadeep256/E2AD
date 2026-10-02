@@ -68,17 +68,22 @@ if not os.path.exists(os.path.join(target_dir, 'train', 'NORMAL')):
     os.makedirs(os.path.join(target_dir, 'test', 'NORMAL'))
     os.makedirs(os.path.join(target_dir, 'test', 'ABNORMAL'))
 
-for path in train_normal_path:
+try:
+    from tqdm.auto import tqdm
+except ImportError:
+    tqdm = lambda x, **k: x
+
+for path in tqdm(train_normal_path, desc="Preprocessing Train NORMAL"):
     image = cv2.imread(path)
     image = fundus_crop(image, shape=[512, 512], margin=5)
     cv2.imwrite(os.path.join(target_dir, 'train', 'NORMAL', os.path.basename(path)), image)
 
-for path in test_normal_path:
+for path in tqdm(test_normal_path, desc="Preprocessing Test NORMAL"):
     image = cv2.imread(path)
     image = fundus_crop(image, shape=[512, 512], margin=5)
     cv2.imwrite(os.path.join(target_dir, 'test', 'NORMAL', os.path.basename(path)), image)
 
-for path in abnormal_path:
+for path in tqdm(abnormal_path, desc="Preprocessing Test ABNORMAL"):
     image = cv2.imread(path)
     image = fundus_crop(image, shape=[512, 512], margin=5)
     cv2.imwrite(os.path.join(target_dir, 'test', 'ABNORMAL', os.path.basename(path)), image)

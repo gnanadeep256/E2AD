@@ -76,11 +76,16 @@ class EDC_MS:
         #
 
         train_log = []
+        try:
+            from tqdm.auto import tqdm
+            pbar = tqdm(total=args.num_train_iter, desc=f"{args.dataset.upper()} E2AD Training", unit="it")
+        except ImportError:
+            pbar = None
+
         for idx, x, _, y, filename in self.loader_dict['train']:
             
-
             # prevent the training iterations exceed args.num_train_iter
-            if self.it > args.num_train_iter:             
+            if self.it >= args.num_train_iter:             
                 break
 
             end_batch.record()
@@ -125,41 +130,85 @@ class EDC_MS:
             tb_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
             tb_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
 
+            if pbar is not None:
+                pbar.update(1)
+                lr_dec = self.optimizer.param_groups[2]['lr'] if len(self.optimizer.param_groups) > 2 else self.optimizer.param_groups[0]['lr']
+                lr_enc = self.optimizer.param_groups[0]['lr']
+                postfix = {
+                    'loss': f"{total_loss.detach().item():.4f}",
+                    'lr_enc': f"{lr_enc:.2e}",
+                    'lr_dec': f"{lr_dec:.2e}",
+                }
+                if best_eval_auc > 0:
+                    postfix['best_auc'] = f"{best_eval_auc * 100:.2f}%"
+                pbar.set_postfix(postfix)
+
             if (self.it + 1) % self.num_eval_iter == 0:
                 eval_dict = self.evaluate(args=args)
                 tb_dict.update(eval_dict)
-
-                #save_path = os.path.join(args.save_dir, args.save_name)
+                curr_auc = eval_dict.get('eval/AUC', 0.0)
                 
-                if tb_dict['eval/AUC'] > best_eval_auc:
-                    best_eval_auc = tb_dict['eval/AUC']
-                    best_it = self.it
+                if curr_auc > best_eval_auc:
+                    best_eval_auc = curr_auc
+                    best_it = self.it + 1
                     if self.save_weight:
-                      torch.save(self.model.state_dict(), self.save_path + '/best_auc.pth')
+                        torch.save(self.model.state_dict(), self.save_path + '/best_auc.pth')
+                        msg_best = f"⭐ NEW BEST AUROC: {best_eval_auc*100:.4f}% @ iteration {best_it}\n[Checkpoint] Saved best model to: {self.save_path}/best_auc.pth"
+                        if pbar is not None:
+                            tqdm.write(msg_best)
+                        else:
+                            print(msg_best)
 
-                self.print_fn(
-                    f"{self.it} iteration, {tb_dict}, BEST_EVAL_AUC: {best_eval_auc}, at {best_it} iters")
+
+                eval_summary = (
+                    f"[Eval @ {self.it + 1}] "
+                    f"AUROC={curr_auc*100:.2f}% | "
+                    f"F1={eval_dict.get('eval/f1', 0)*100:.2f}% | "
+                    f"ACC={eval_dict.get('eval/acc', 0)*100:.2f}% | "
+                    f"SEN={eval_dict.get('eval/recall', 0)*100:.2f}% | "
+                    f"SPE={eval_dict.get('eval/specificity', 0)*100:.2f}% | "
+                    f"Best={best_eval_auc*100:.2f}% (@ {best_it})"
+                )
+                full_log_msg = f"{self.it} iteration, {tb_dict}, BEST_EVAL_AUC: {best_eval_auc}, at {best_it} iters"
+                if pbar is not None:
+                    tqdm.write(eval_summary)
+                    pbar.set_postfix({
+                        'loss': f"{total_loss.item():.4f}",
+                        'auc': f"{curr_auc*100:.2f}%",
+                        'best_auc': f"{best_eval_auc*100:.2f}%"
+                    })
+                else:
+                    self.print_fn(full_log_msg)
+
+                if self.logger is not None:
+                    self.logger.info(full_log_msg)
 
                 if self.tb_log is not None:
                     self.tb_log.update(tb_dict, self.it)
-
-                    tb_dict['it'] = self.it
-                    train_log.append(tb_dict)
+                tb_dict['it'] = self.it
+                train_log.append(dict(tb_dict))
 
             self.it += 1
             del tb_dict         
             start_batch.record()
 
+        if pbar is not None:
+            pbar.close()
+
         if self.save_weight:        
           torch.save(self.model.state_dict(), self.save_path + '/last_epoch.pth')
-          print('Weight saved in {}'.format(self.save_path))
+          print('[Checkpoint] Final model saved: {}'.format(self.save_path + '/last_epoch.pth'))
           
     #    f_save = open(os.path.join(self.save_path, 'train_log.pkl'), 'wb')
     #    pickle.dump(train_log, f_save)
     #    f_save.close()
 
+        self.train_log = train_log
         eval_dict = self.evaluate(args=args, save_visual=False)
-        eval_dict.update({'eval/best_auc': best_eval_auc, 'eval/best_it': best_it})
+        eval_dict.update({'eval/best_auc': best_eval_auc, 'eval/best_it': best_it, 'eval/train_log': train_log})
+        self.eval_dict = eval_dict
+        if args is not None:
+            args.last_eval_dict = eval_dict
         return eval_dict
 
     @torch.no_grad()
