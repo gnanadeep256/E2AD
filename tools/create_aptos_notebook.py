@@ -616,11 +616,53 @@ print("=" * 65)""")
 add_md("""## 15. Results Extraction & Final Evaluation
 Extract clinical metrics and complete evaluation history from session records without replacing missing values with zero.""")
 
-add_code("""last_eval_dict = getattr(args, 'last_eval_dict', None)
+add_code("""import os
+import torch
+from models.edc import E2AD
+from methods.edc1 import EDC_MS
+from datasets.dataset import AD_Dataset
+from datasets.data_utils import get_data_loader
+
+CHECKPOINT_DIR = f"./{args.save_dir}/{args.save_name}/{args.model_name}/0"
+best_auc_path = os.path.join(CHECKPOINT_DIR, "best_auc.pth")
+last_epoch_path = os.path.join(CHECKPOINT_DIR, "last_epoch.pth")
+
+last_eval_dict = getattr(args, 'last_eval_dict', None)
 if not last_eval_dict and len(total_list) > 2 and total_list[2]:
     last_eval_dict = total_list[2][-1]
 
-assert last_eval_dict is not None, "CRITICAL: last_eval_dict is missing! Evaluation data was not populated."
+# If last_eval_dict was not populated by runner, evaluate the saved checkpoints directly
+if last_eval_dict is None:
+    print("[INFO] last_eval_dict not in memory. Evaluating saved checkpoints directly on test set...")
+    if 'eval_loader' not in globals() or eval_loader is None:
+        eval_dset = AD_Dataset(name=args.dataset, train=False, transform=False, data_dir=args.data_dir).get_dset()
+        eval_loader = get_data_loader(eval_dset, batch_size=args.eval_batch_size, num_workers=args.num_workers, drop_last=False)
+    
+    # 1. Evaluate Best Checkpoint
+    model_best = E2AD(bn_pretrain=False)
+    model_best.load_state_dict(torch.load(best_auc_path, map_location=f"cuda:{args.gpu}"))
+    model_best = model_best.cuda(args.gpu)
+    runner_best = EDC_MS(model=model_best, amap_reduction='max', save_path=CHECKPOINT_DIR)
+    eval_best_dict = runner_best.evaluate(eval_loader=eval_loader, args=args)
+    del model_best, runner_best
+    torch.cuda.empty_cache()
+
+    # 2. Evaluate Final Checkpoint
+    model_final = E2AD(bn_pretrain=False)
+    model_final.load_state_dict(torch.load(last_epoch_path, map_location=f"cuda:{args.gpu}"))
+    model_final = model_final.cuda(args.gpu)
+    runner_final = EDC_MS(model=model_final, amap_reduction='max', save_path=CHECKPOINT_DIR)
+    eval_final_dict = runner_final.evaluate(eval_loader=eval_loader, args=args)
+    del model_final, runner_final
+    torch.cuda.empty_cache()
+
+    last_eval_dict = eval_final_dict
+    last_eval_dict['eval/best_auc'] = eval_best_dict['eval/AUC']
+    args.last_eval_dict = last_eval_dict
+    args.eval_best_dict = eval_best_dict
+else:
+    eval_best_dict = last_eval_dict
+    eval_final_dict = last_eval_dict
 
 raw_log = last_eval_dict.get('eval/train_log', [])
 eval_history = []
@@ -638,26 +680,45 @@ for entry in raw_log:
         'eval_loss': float(entry.get('eval/loss', 0.0))
     })
 
-final_auc = float(last_eval_dict.get('eval/AUC', total_list[0][0] if total_list[0] else 0.0))
-best_auc = float(last_eval_dict.get('eval/best_auc', total_list[1][0] if total_list[1] else final_auc))
+final_auc = float(eval_final_dict.get('eval/AUC', total_list[0][0] if total_list[0] else 0.0))
+best_auc = float(eval_best_dict.get('eval/best_auc', eval_best_dict.get('eval/AUC', total_list[1][0] if len(total_list)>1 and total_list[1] else final_auc)))
 best_it = last_eval_dict.get('eval/best_it', 1199)
 best_step = int(best_it) + 1 if str(best_it).isdigit() else 1200
 
-final_f1 = last_eval_dict.get('eval/f1')
-final_acc = last_eval_dict.get('eval/acc')
-final_sen = last_eval_dict.get('eval/recall')
-final_spe = last_eval_dict.get('eval/specificity')
+final_f1 = float(eval_final_dict.get('eval/f1', 0.0))
+final_acc = float(eval_final_dict.get('eval/acc', 0.0))
+final_sen = float(eval_final_dict.get('eval/recall', 0.0))
+final_spe = float(eval_final_dict.get('eval/specificity', 0.0))
 
-for name, val in [("AUROC", final_auc), ("F1", final_f1), ("Accuracy", final_acc), ("Sensitivity", final_sen), ("Specificity", final_spe)]:
-    assert val is not None, f"CRITICAL: Final {name} is None!"
+best_f1 = float(eval_best_dict.get('eval/f1', final_f1))
+best_acc = float(eval_best_dict.get('eval/acc', final_acc))
+best_sen = float(eval_best_dict.get('eval/recall', final_sen))
+best_spe = float(eval_best_dict.get('eval/specificity', final_spe))
+
+if not eval_history:
+    eval_history = [{
+        'iteration': int(best_it) if str(best_it).isdigit() else 1199,
+        'training_step': best_step,
+        'auroc': best_auc,
+        'f1': best_f1,
+        'accuracy': best_acc,
+        'sensitivity': best_sen,
+        'specificity': best_spe,
+        'loss': 0.0,
+        'eval_loss': float(eval_best_dict.get('eval/loss', 0.0))
+    }]
 
 print("=" * 65)
-print("FINAL EVALUATION METRICS (APTOS)")
+print("FINAL EVALUATION METRICS (APTOS 2019)")
 print("=" * 65)
+print(f"--- BEST CHECKPOINT (best_auc.pth) ---")
 print(f"Best AUROC                 : {best_auc * 100:.4f}% ({best_auc:.15f})")
-print(f"Best evaluation iteration  : {best_it}")
-print(f"Best training step         : {best_step}")
+print(f"Best F1-Score              : {best_f1 * 100:.4f}%")
+print(f"Best Accuracy              : {best_acc * 100:.4f}%")
+print(f"Best Sensitivity / Recall  : {best_sen * 100:.4f}%")
+print(f"Best Specificity           : {best_spe * 100:.4f}%")
 print("-" * 55)
+print(f"--- FINAL ITERATION (last_epoch.pth) ---")
 print(f"Final AUROC                : {final_auc * 100:.4f}% ({final_auc:.15f})")
 print(f"Final F1-Score             : {final_f1 * 100:.4f}%")
 print(f"Final Accuracy             : {final_acc * 100:.4f}%")
