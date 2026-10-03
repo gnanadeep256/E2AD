@@ -280,10 +280,42 @@ if ISIC_DIR is None:
                 print(f"[FOUND] Raw ISIC2018 dataset at: {raw_dir}")
                 break
             
-    assert raw_dir is not None, (
-        f"CRITICAL: Raw ISIC2018 dataset not found! Checked candidates:\\n" +
-        "\\n".join(f"  - {c}" for c in raw_candidates)
-    )
+    if raw_dir is None:
+        print("[INFO] Raw Task 3 dataset not detected in /kaggle/input or local candidate paths.")
+        print("Initiating direct download of official ISIC 2018 Challenge Task 3 archives from AWS S3...")
+        import urllib.request
+        import zipfile
+        from tqdm.auto import tqdm
+
+        class DownloadProgressBar(tqdm):
+            def update_to(self, b=1, bsize=1, tsize=None):
+                if tsize is not None:
+                    self.total = tsize
+                self.update(b * bsize - self.n)
+
+        raw_download_dir = os.path.join(target_dir, "original")
+        os.makedirs(raw_download_dir, exist_ok=True)
+
+        urls = [
+            ("ISIC2018_Task3_Training_Input.zip", "https://isic-challenge-data.s3.amazonaws.com/2018/ISIC2018_Task3_Training_Input.zip"),
+            ("ISIC2018_Task3_Training_GroundTruth.zip", "https://isic-challenge-data.s3.amazonaws.com/2018/ISIC2018_Task3_Training_GroundTruth.zip"),
+            ("ISIC2018_Task3_Validation_Input.zip", "https://isic-challenge-data.s3.amazonaws.com/2018/ISIC2018_Task3_Validation_Input.zip"),
+            ("ISIC2018_Task3_Validation_GroundTruth.zip", "https://isic-challenge-data.s3.amazonaws.com/2018/ISIC2018_Task3_Validation_GroundTruth.zip")
+        ]
+
+        for fname, url in urls:
+            dest_zip = os.path.join(raw_download_dir, fname)
+            print(f"Downloading {fname}...")
+            with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc=fname) as t:
+                urllib.request.urlretrieve(url, filename=dest_zip, reporthook=t.update_to)
+            print(f"Extracting {fname}...")
+            with zipfile.ZipFile(dest_zip, 'r') as zip_ref:
+                zip_ref.extractall(raw_download_dir)
+            if os.path.exists(dest_zip):
+                os.remove(dest_zip)
+
+        raw_dir = raw_download_dir
+        print(f"[DOWNLOAD COMPLETED] Official ISIC 2018 Task 3 unpacked to: {raw_dir}")
     
     print(f"Executing official preprocessing: {raw_dir} -> {target_dir}...")
     prep_cmd = [
@@ -293,6 +325,14 @@ if ISIC_DIR is None:
     ]
     subprocess.run(prep_cmd, check=True)
     ISIC_DIR = os.path.abspath(target_dir)
+
+    # Clean up temporary downloaded raw files if they were downloaded to target_dir/original to save disk space
+    raw_download_dir = os.path.join(target_dir, "original")
+    if os.path.exists(raw_download_dir) and raw_dir == raw_download_dir:
+        import shutil
+        shutil.rmtree(raw_download_dir)
+        print(f"[CLEANUP] Removed temporary raw files from {raw_download_dir} to free disk space.")
+
     print(f"[COMPLETED] Preprocessing finished successfully. Target: {ISIC_DIR}")
 
 print("=" * 65)

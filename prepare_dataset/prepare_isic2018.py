@@ -28,16 +28,25 @@ def find_file(base_dir, filename):
     direct = os.path.join(base_dir, filename)
     if os.path.exists(direct):
         return direct
-    # Recursive search
+    # Recursive search (case-insensitive)
     for root, dirs, files in os.walk(base_dir):
-        if filename in files:
-            return os.path.join(root, filename)
+        for f in files:
+            if f.lower() == filename.lower():
+                return os.path.join(root, f)
     raise FileNotFoundError(f"Could not find {filename} under {base_dir}")
 
 def find_image_folder(base_dir, folder_name):
-    # Look for directory matching folder_name that contains .jpg files
+    # Pass 1: exact or case-insensitive match on basename
     for root, dirs, files in os.walk(base_dir):
-        if os.path.basename(root) == folder_name:
+        if os.path.basename(root).lower() == folder_name.lower():
+            jpgs = [f for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+            if len(jpgs) > 0:
+                return root
+    # Pass 2: substring match (e.g. task3 and training/validation)
+    key1 = 'training' if 'train' in folder_name.lower() else 'valid'
+    for root, dirs, files in os.walk(base_dir):
+        bname = os.path.basename(root).lower()
+        if key1 in bname and any(k in bname for k in ['input', 'task3', 'images']):
             jpgs = [f for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
             if len(jpgs) > 0:
                 return root
