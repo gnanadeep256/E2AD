@@ -14,6 +14,8 @@ BR35H/
 APTOS/
 ISIC2018/
 OCT2017/
+kaggle_dataset_isic/
+scratch/
 *.zip
 *.tar.gz
 
