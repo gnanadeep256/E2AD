@@ -231,26 +231,55 @@ test_abnorm_dir = os.path.join(target_dir, "test", "ABNORMAL")
 
 ISIC_DIR = None
 
-# Check if already preprocessed in target_dir or candidate paths
-preprocessed_candidates = [
+# Check if already preprocessed in candidate paths (recursive up to 3 levels)
+search_roots = [
+    "/kaggle/input/datasets/gnanadeepthatavarthi/isic-2k18",
+    "/kaggle/input/isic-2k18",
+    "/kaggle/input/isic2018-processed",
+    "/kaggle/input/e2ad-isic",
+    "/kaggle/input",
     target_dir,
     "./ISIC2018",
-    "../ISIC2018",
-    "/kaggle/input/isic2018-processed",
-    "/kaggle/input/e2ad-isic"
+    "../ISIC2018"
 ]
 
-for p in preprocessed_candidates:
-    t_norm = os.path.join(p, "train", "NORMAL")
-    te_norm = os.path.join(p, "test", "NORMAL")
-    te_abnorm = os.path.join(p, "test", "ABNORMAL")
+for base in search_roots:
+    if not os.path.exists(base):
+        continue
+    # Check directly
+    t_norm = os.path.join(base, "train", "NORMAL")
+    te_norm = os.path.join(base, "test", "NORMAL")
+    te_abnorm = os.path.join(base, "test", "ABNORMAL")
     if os.path.exists(t_norm) and os.path.exists(te_norm) and os.path.exists(te_abnorm):
-        if len(os.listdir(t_norm)) == 6705 and len(os.listdir(te_norm)) == 123 and len(os.listdir(te_abnorm)) == 70:
-            ISIC_DIR = os.path.abspath(p)
-            print(f"[VERIFIED] Preprocessed ISIC2018 dataset already present at: {ISIC_DIR}")
-            print(f"  Train NORMAL: 6705 | Test NORMAL: 123 | Test ABNORMAL: 70 (Total: 6898)")
-            print("  Skipping preprocessing step.")
+        c_tr = len([f for f in os.listdir(t_norm) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+        c_ten = len([f for f in os.listdir(te_norm) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+        c_tea = len([f for f in os.listdir(te_abnorm) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+        if c_tr == 6705 and c_ten == 123 and c_tea == 70:
+            ISIC_DIR = os.path.abspath(base)
             break
+
+    # If base is a container like /kaggle/input, walk subdirectories
+    for root, dirs, _ in os.walk(base):
+        depth = root[len(base):].count(os.sep)
+        if depth > 3:
+            continue
+        t_norm = os.path.join(root, "train", "NORMAL")
+        te_norm = os.path.join(root, "test", "NORMAL")
+        te_abnorm = os.path.join(root, "test", "ABNORMAL")
+        if os.path.exists(t_norm) and os.path.exists(te_norm) and os.path.exists(te_abnorm):
+            c_tr = len([f for f in os.listdir(t_norm) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+            c_ten = len([f for f in os.listdir(te_norm) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+            c_tea = len([f for f in os.listdir(te_abnorm) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+            if c_tr == 6705 and c_ten == 123 and c_tea == 70:
+                ISIC_DIR = os.path.abspath(root)
+                break
+    if ISIC_DIR is not None:
+        break
+
+if ISIC_DIR is not None:
+    print(f"[VERIFIED] Preprocessed ISIC2018 dataset discovered at: {ISIC_DIR}")
+    print(f"  Train NORMAL: 6705 | Test NORMAL: 123 | Test ABNORMAL: 70 (Total: 6898)")
+    print("  Skipping preprocessing step.")
 
 # If not preprocessed, search for raw dataset candidates
 if ISIC_DIR is None:
