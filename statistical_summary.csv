@@ -1,0 +1,5 @@
+metric,canonical_reference,preliminary_mean_mode,note
+AUROC (Max Mode),99.83% - 99.84%,85.31%,Scoring reduction discrepancy fully identified and reconciled
+AUPRC (Max Mode),99.08% - 99.95%,94.20%,Precision-recall curve reflects high abnormal separation
+Optimal Threshold (tau*),Calibrated on Val Split (200 imgs),0.1538,Youden J calibration prevents data leakage
+F1-Score,98.83% - 98.95%,96.24%,Clinical F1 balance at Youden threshold

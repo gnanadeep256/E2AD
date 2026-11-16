@@ -1,0 +1,13 @@
+{
+  "gradient_norms_by_module": {
+    "encoder": 8.409506832286189,
+    "decoder_1": 0.6525576754892575,
+    "decoder_2": 0.6330715596000851,
+    "sa1": 4.065906523464946e-06,
+    "sa2": 2.4031651264522225e-06,
+    "sa3": 3.768945134652313e-06,
+    "sa4": 1.2688581136899302e-06
+  },
+  "all_target_modules_active": true,
+  "status": "GRADIENT_VERIFICATION_PASSED"
+}

@@ -1,0 +1,57 @@
+{
+  "oct_root": "C:\\Users\\HP\\Downloads\\E2AD\\OCT2017",
+  "total_scanned": 52140,
+  "total_valid": 52140,
+  "corrupted_count": 0,
+  "corrupted_files": [],
+  "split_class_counts": {
+    "train/NORMAL": 51140,
+    "test/NORMAL": 250,
+    "test/CNV": 250,
+    "test/DME": 250,
+    "test/DRUSEN": 250
+  },
+  "unique_content_hashes": 51121,
+  "exact_duplicate_hash_count": 926,
+  "train_test_overlap_count": 0,
+  "train_test_overlap_instances": [],
+  "formats_distribution": {
+    "JPEG": 52140
+  },
+  "modes_distribution": {
+    "L": 52138,
+    "RGB": 2
+  },
+  "top_dimensions": [
+    [
+      "512x496",
+      31269
+    ],
+    [
+      "768x496",
+      14352
+    ],
+    [
+      "1536x496",
+      5392
+    ],
+    [
+      "1024x496",
+      1119
+    ],
+    [
+      "384x496",
+      6
+    ],
+    [
+      "642x277",
+      1
+    ],
+    [
+      "900x455",
+      1
+    ]
+  ],
+  "audit_elapsed_sec": 110.92,
+  "audit_timestamp": "2026-11-16 18:57:28"
+}

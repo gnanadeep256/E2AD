@@ -1,0 +1,9 @@
+{
+  "os": "Windows / Linux (Kaggle Ubuntu 22.04 Compatible)",
+  "python_version": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+  "pytorch_version": "2.10.0+cpu",
+  "cuda_available": false,
+  "cuda_device_name": "None (Local Audit CPU)",
+  "target_deployment_device": "Kaggle NVIDIA Tesla T4 (14.56 GiB VRAM)",
+  "timestamp": "2026-11-16 19:07:08"
+}

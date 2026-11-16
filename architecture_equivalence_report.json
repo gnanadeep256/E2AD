@@ -1,0 +1,15 @@
+{
+  "loss_absolute_difference": 0.0,
+  "p_all_1_max_difference": 0.0,
+  "p_all_2_max_difference": 0.0,
+  "p1_max_difference": 0.0,
+  "a1_vs_p_all_1_match": 0.0,
+  "parameter_count_orig": 852,
+  "parameter_count_refactored": 852,
+  "parameter_set_exact_match": true,
+  "gradients_reach_decoder_1": true,
+  "gradients_reach_decoder_2": true,
+  "gradients_reach_sasc_modules": true,
+  "single_forward_pass_verified": true,
+  "status": "EQUIVALENCE_VERIFIED"
+}

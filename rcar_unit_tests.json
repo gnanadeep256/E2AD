@@ -1,0 +1,57 @@
+{
+  "coordinate_inverse_alignment_pass": true,
+  "spatial_dimensions": [
+    2,
+    1,
+    64,
+    64
+  ],
+  "zero_nan_or_inf": true,
+  "alpha_sweep": {
+    "alpha_0.0": {
+      "loss_rcar": 0.021580593660473824,
+      "unweighted_cons": 0.021580593660473824,
+      "weighted_cons": 0.021580593660473824,
+      "w_mean": 1.0,
+      "w_min": 1.0,
+      "w_max": 1.0,
+      "res_mean_1": 0.6615111827850342,
+      "res_mean_2": 0.6625757813453674
+    },
+    "alpha_1.0": {
+      "loss_rcar": 0.02159959264099598,
+      "unweighted_cons": 0.021580593660473824,
+      "weighted_cons": 0.02159959264099598,
+      "w_mean": 0.2661437392234802,
+      "w_min": 0.24117088317871094,
+      "w_max": 0.2987534999847412,
+      "res_mean_1": 0.6615111827850342,
+      "res_mean_2": 0.6625757813453674
+    },
+    "alpha_2.0": {
+      "loss_rcar": 0.0216191578656435,
+      "unweighted_cons": 0.021580593660473824,
+      "weighted_cons": 0.0216191578656435,
+      "w_mean": 0.07088466733694077,
+      "w_min": 0.058163393288850784,
+      "w_max": 0.08925365656614304,
+      "res_mean_1": 0.6615111827850342,
+      "res_mean_2": 0.6625757813453674
+    },
+    "alpha_4.0": {
+      "loss_rcar": 0.021659979596734047,
+      "unweighted_cons": 0.021580593660473824,
+      "weighted_cons": 0.021659979596734047,
+      "w_mean": 0.005039464682340622,
+      "w_min": 0.0033829803578555584,
+      "w_max": 0.00796621572226286,
+      "res_mean_1": 0.6615111827850342,
+      "res_mean_2": 0.6625757813453674
+    }
+  },
+  "alpha_0_reduction_match": 0.0,
+  "zero_residual_stability": true,
+  "a1_requires_grad": true,
+  "a2_requires_grad": true,
+  "status": "ALL_UNIT_TESTS_PASSED"
+}

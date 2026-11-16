@@ -1,0 +1,92 @@
+{
+  "project_name": "E2AD + R-CAR (OCT2017 Reproduction & Rotation Consistency Audit)",
+  "repository": "https://github.com/gnanadeep256/E2AD.git",
+  "reference_paper": "Tang et al., IEEE Transactions on Medical Imaging (TMI), 2025",
+  "commit_hash": "257598a3b0d39017b1c89fd0f4af8366c9771bc2",
+  "notebook_sha256": "84d54366c414ca0f42c606c5aa0876e060a4cda7857f436d124ccdef691cacba",
+  "dataset": {
+    "name": "OCT2017",
+    "train_normal_images": 51140,
+    "test_normal_images": 250,
+    "test_cnv_images": 250,
+    "test_dme_images": 250,
+    "test_drusen_images": 250,
+    "total_images": 52140,
+    "corrupted_images": 0,
+    "train_test_overlap": 0,
+    "dataset_manifest_sha256": "615a0e8f4d69d8ba24e98f3019e32a017622de88b5350a19a8d0b9f530729c15"
+  },
+  "preprocessing": {
+    "input_resolution": [
+      256,
+      256
+    ],
+    "crop_size": [
+      256,
+      256
+    ],
+    "interpolation": "Bilinear",
+    "normalization": {
+      "mean": [
+        0.485,
+        0.456,
+        0.406
+      ],
+      "std": [
+        0.229,
+        0.224,
+        0.225
+      ]
+    },
+    "aspect_ratio_behavior": "Anisotropic squash to 256x256 matching author implementation (TumCCC/E2AD)"
+  },
+  "architecture": {
+    "model_class": "E2AD_Unified",
+    "backbone": "ResNet-50 (ImageNet-1K pretrained)",
+    "encoder_trainable": true,
+    "bn_pretrain": true,
+    "single_forward_pass": true,
+    "shared_initial_weights_sha256": "93e1ce3b4a7d66ccdb0ba5c5df9bda8172fb5cf543e55f5307a22d13ad7904f1"
+  },
+  "optimization": {
+    "optimizer": "AdamW",
+    "encoder_lr": 1e-05,
+    "decoder_lr": 0.0005,
+    "weight_decay": 0.0001,
+    "momentum": 0.9,
+    "batch_size": 16,
+    "total_iterations": 2000,
+    "eval_interval": 100,
+    "scheduler_milestones": [
+      100000
+    ],
+    "learning_rate_dynamics": "Constant throughout training (matching paper e2ad_oct.py milestones=[1e10])"
+  },
+  "scoring": {
+    "primary_canonical_mode": "Maximum Reduction across 64x64 spatial maps (Tang et al., 2025)",
+    "exploratory_mode": "Mean Reduction across spatial maps"
+  },
+  "experiment_arms": [
+    {
+      "arm_id": "Exp_A_Baseline",
+      "description": "Original E2AD reproduction",
+      "lambda_rcar": 0.0,
+      "alpha": 0.0,
+      "mode": "none"
+    },
+    {
+      "arm_id": "Exp_B_Unweighted_RCAR",
+      "description": "Unweighted spatial residual consistency",
+      "lambda_rcar": 1.0,
+      "alpha": 0.0,
+      "mode": "unweighted"
+    },
+    {
+      "arm_id": "Exp_C_ConfWeighted_RCAR",
+      "description": "Confidence-weighted spatial residual consistency",
+      "lambda_rcar": 1.0,
+      "alpha": 2.0,
+      "mode": "weighted"
+    }
+  ]
+}
