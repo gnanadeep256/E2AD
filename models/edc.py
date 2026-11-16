@@ -108,7 +108,7 @@ class E2AD(nn.Module):
         
         
         
-    def forward(self, x):
+    def forward(self, x, return_rcar_maps=False):
         if not self.train_encoder and self.edc_encoder.training:
             self.edc_encoder.eval()
             
@@ -183,5 +183,31 @@ class E2AD(nn.Module):
             e2_std = F.normalize(e2_1.permute(1, 0, 2, 3).flatten(1), dim=0).std(dim=1).mean()
             e3_std = F.normalize(e3_1.permute(1, 0, 2, 3).flatten(1), dim=0).std(dim=1).mean()
 
-        return {'loss': loss, 'p_all_1': p_all_1, 'p_all_2': p_all_2, 'p1': p1, 'p2': p2, 'p3': p3, 'p4': p4, 'p5': p5, 'p6': p6,
-                'e1_std': e1_std, 'e2_std': e2_std, 'e3_std': e3_std}
+        ret_dict = {'loss': loss, 'p_all_1': p_all_1, 'p_all_2': p_all_2, 'p1': p1, 'p2': p2, 'p3': p3, 'p4': p4, 'p5': p5, 'p6': p6,
+                    'e1_std': e1_std, 'e2_std': e2_std, 'e3_std': e3_std}
+
+        if getattr(self, 'enable_rcar', False) or return_rcar_maps:
+            # Differentiable residual maps for R-CAR consistency
+            # Note: e1_1, e2_1, e3_1 and e1_2, e2_2, e3_2 are detached in lines 137-143,
+            # so gradients flow specifically through d1_1..d3_2 (decoders and SASC)
+            p1_diff = 1. - torch.cosine_similarity(d1_1, e1_1, dim=1).unsqueeze(1)
+            p2_diff = 1. - torch.cosine_similarity(d2_1, e2_1, dim=1).unsqueeze(1)
+            p3_diff = 1. - torch.cosine_similarity(d3_1, e3_1, dim=1).unsqueeze(1)
+
+            p4_diff = 1. - torch.cosine_similarity(d1_2, e1_2, dim=1).unsqueeze(1)
+            p5_diff = 1. - torch.cosine_similarity(d2_2, e2_2, dim=1).unsqueeze(1)
+            p6_diff = 1. - torch.cosine_similarity(d3_2, e3_2, dim=1).unsqueeze(1)
+
+            p2_diff = F.interpolate(p2_diff, scale_factor=2)
+            p3_diff = F.interpolate(p3_diff, scale_factor=4)
+
+            p5_diff = F.interpolate(p5_diff, scale_factor=2)
+            p6_diff = F.interpolate(p6_diff, scale_factor=4)
+
+            A1 = torch.cat([p1_diff, p2_diff, p3_diff], dim=1).mean(dim=1, keepdim=True)
+            A2_rot = torch.cat([p4_diff, p5_diff, p6_diff], dim=1).mean(dim=1, keepdim=True)
+            A2 = torch.rot90(A2_rot, 2, (2, 3))
+            ret_dict['A1'] = A1
+            ret_dict['A2'] = A2
+
+        return ret_dict
